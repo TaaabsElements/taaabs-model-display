@@ -1,0 +1,86 @@
+<link rel="import" href="../taaabs-stylesheet/taaabs-stylesheet.html">
+
+<dom-module id="taaabs-model-display">
+<link rel="import" type="css" href="../samotracesjs/dist/samotraces.css"/>
+  <template>
+    <h2> Show Model </h2>
+    <div id="modeldiv"></div>
+  </template>
+
+  <script>
+    /* global Polymer, Samotraces, TaaabsBehaviors  */
+
+    /**
+     *`<taaabs-model-display>` is a wrapper for Samotraces.Ui.Widgets.DisplayModel.
+     *The purpose of this Widget is to allow the user to see a Trace Model.
+     *
+     *(@polymerBehavior) TaaabsBehaviors.Stylesheet : Polymer Behavior (Mixin)
+     *We use it to get and apply the style of the visualization.
+     *
+     *@element taaabs-model-display
+     */
+    Polymer({
+      is: 'taaabs-model-display',
+      behaviors: [
+        TaaabsBehaviors.Stylesheet
+      ],
+      properties: {
+        model: {
+          type: Object,
+          notify: true,
+          observer: '_modelSelChanged'
+        },
+        obselSelector: {
+          type: Object,
+          reflectToAttribute: true,
+          notify: true
+        },
+        options: {
+          type: String,
+          notify: true,
+          observer: '_optionsChanged'
+        }
+      },
+      _modelSelChanged: function() {
+        var that = this;
+        if (!this.options){
+          this._getStylesheet().then(function(stylesheet) {
+            that.options = stylesheet;
+            that._attachWidget();
+          });
+        }
+        else {
+          that._attachWidget();
+        }
+      },
+      _optionsChanged: function(){
+          if (this.model && this.options) {
+          this._attachWidget();
+          this.observObselsType();
+        }
+      },
+      _attachWidget: function() {
+
+        this.$$('#modeldiv').innerHTML='';
+        new Samotraces.Ui.Widgets.DisplayModel (this.$$('#modeldiv'), this.model, this.options);
+        this.model.on('Model:listeType', (function(){
+          setTimeout(this.observObselsType.bind(this), 2000); // TODO check if this bind(this) is useless ?
+        }).bind(this));
+      },
+      observObselsType: function() {
+        // this is a NodeList, not an Array, so no forEach
+        var obselsNodeList = Polymer.dom(this.root).querySelectorAll('.Samotraces-obsel');
+        // forall obsel Node, attach a click handler
+        for (var i = 0; i < obselsNodeList.length; i++) {
+          var obsel = obselsNodeList[i];
+          obsel.onclick = this.handleClick.bind(this);
+        }
+      },
+      handleClick: function(event) {
+        var obsel = event.target.__data__;
+        this.set('obselSelector', obsel);
+
+      }
+    });
+  </script>
+</dom-module>
